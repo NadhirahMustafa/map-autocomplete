@@ -9,7 +9,7 @@ import "../styles/Styles.scss";
 const Map: React.FC<SetCoordinateInterface> = ({ lat, lng }) => {
   const { isLoaded } = useJsApiLoader({
     id: AUTH.SCRIPT,
-    googleMapsApiKey: AUTH.API_KEY,
+    googleMapsApiKey: process.env.REACT_APP_API_KEY,
   });
 
   const [, setMap] = React.useState(null);
@@ -19,10 +19,10 @@ const Map: React.FC<SetCoordinateInterface> = ({ lat, lng }) => {
     lng: lng === 0 ? 101.6841 : lng,
   };
 
-  const onLoad = React.useCallback(function callback(map: any) {
+  const onLoad = (map: any) => {
     new window.google.maps.LatLngBounds(center);
     setMap(map);
-  }, []);
+  };
 
   const onUnmount = React.useCallback(function callback() {
     setMap(null);
@@ -53,4 +53,4 @@ const mapStateToProps = (state: RootState) => ({
   lng: state.locationData.lng,
 });
 
-export default connect(mapStateToProps)(React.memo(Map));
+export default connect(mapStateToProps)(Map);
