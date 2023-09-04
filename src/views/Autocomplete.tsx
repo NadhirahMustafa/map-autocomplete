@@ -1,45 +1,58 @@
 import React, { useState } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, connect } from "react-redux";
 import Geocode from "react-geocode";
-import { Select } from "antd";
+import { Select, Typography } from "antd";
 import { getLocationAutocomplete } from "../services/api.service";
-import { setLocationName } from "../redux/actions";
-import { getMapInterface } from "../interface/interface";
-import { AUTH } from "../constants/apiKey.constant";
+import { setLocationName } from "../actions/coordinateActions";
+import { StoreDataProps, getMapInterface } from "../interface/interface";
 import { autocomplete } from "../constants/message.constant";
+import { addSearchResult, storeSearchQuery } from "../actions/storeDataActions";
+import "../styles/Styles.scss";
 
-const Autocomplete: React.FC = () => {
+const { Title } = Typography;
+
+const Autocomplete: React.FC<StoreDataProps> = ({
+  addSearchResult,
+  storeSearchQuery,
+}) => {
   const dispatch = useDispatch();
-  const [, setQuery] = useState("");
   const [places, setPlaces] = useState<getMapInterface>({
     predictions: [],
     status: "",
   });
-  
-  Geocode.setApiKey(AUTH.API_KEY);
+
+  Geocode.setApiKey(process.env.REACT_APP_API_KEY);
 
   const onChange = (value: string) => {
     Geocode.fromAddress(value).then(
       (response) => {
         const { lat, lng } = response.results[0].geometry.location;
-        console.log(lat, lng);
-        dispatch(setLocationName({
-          lat: lat,
-          lng: lng
-        }));
+        dispatch(
+          setLocationName({
+            lat: lat,
+            lng: lng,
+          })
+        );
       },
       (error) => {
         console.error(error);
+        alert(autocomplete.error_message);
       }
     );
+    addSearchResult(value);
+    storeSearchQuery(value);
   };
 
   const onSearch = async (value: string) => {
-    setQuery(value);
-    let res = await getLocationAutocomplete(value);
-    if (res) {
-      setPlaces(res);
-    } else {
+    try {
+      let res = await getLocationAutocomplete(value);
+      if (res.status === 'OK') {
+        setPlaces(res);
+      } else {
+        alert(autocomplete.invalid_api_key);
+      }
+    } catch (err) {
+      console.error(err);
       alert(autocomplete.error_message);
     }
   };
@@ -58,19 +71,26 @@ const Autocomplete: React.FC = () => {
 
   return (
     <div>
-      <h1>{autocomplete.title}</h1>
-      <Select
-        showSearch
-        placeholder={autocomplete.placeholder}
-        optionFilterProp={autocomplete.optionFilterProp}
-        onChange={onChange}
-        onSearch={onSearch}
-        filterOption={filterOption}
-        options={dataList}
-        style={{minWidth: `50%`}}
-      />
+      <Title>{autocomplete.title}</Title>
+      <div className="map--padding">
+        <Select
+          showSearch
+          placeholder={autocomplete.placeholder}
+          optionFilterProp={autocomplete.optionFilterProp}
+          onChange={onChange}
+          onSearch={onSearch}
+          filterOption={filterOption}
+          options={dataList}
+          style={{ minWidth: `30%` }}
+        />
+      </div>
     </div>
   );
 };
 
-export default Autocomplete;
+const mapDispatchToProps = {
+  addSearchResult,
+  storeSearchQuery,
+};
+
+export default connect(null, mapDispatchToProps)(Autocomplete);
